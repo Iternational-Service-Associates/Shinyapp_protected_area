@@ -15,7 +15,7 @@ library(readxl)
 library(tidyr)
 library(ggplot2)
 library(rnaturalearth)
-
+#rftrftg5gt5gt5gt4ger
 
 # ============================================================
 # 1. CHEMINS DES 3 BASES
