@@ -1,3 +1,7 @@
+# ============================================================
+# APPLICATION SHINY - AIRES PROTEGEES DU SENEGAL
+# ============================================================
+
 
 # ============================================================
 # PACKAGES
@@ -17,22 +21,26 @@ library(rnaturalearth)
 # 1. CHEMINS DES 3 BASES
 # ============================================================
 
-dossier <- "data/"
+dossier <- "C:/Users/H P/Desktop/SHYNI-APP/data"
+
 
 chemin_base1 <- file.path(
   dossier,
   "aires_protegees.geojson"
 )
 
+
 chemin_base3 <- file.path(
   dossier,
   "Base 2.geojson"
 )
 
+
 chemins_merge <- c(
   file.path(dossier, "merge.xlsx"),
   file.path(dossier, "merge.xls")
 )
+
 
 chemin_merge <- chemins_merge[
   file.exists(chemins_merge)
@@ -43,9 +51,11 @@ if (!file.exists(chemin_base1)) {
   stop("aires_protegees.geojson est introuvable.")
 }
 
+
 if (!file.exists(chemin_base3)) {
   stop("Base 2.geojson est introuvable.")
 }
+
 
 if (is.na(chemin_merge)) {
   stop("Le fichier Excel merge est introuvable.")
@@ -61,9 +71,11 @@ base1 <- st_read(
   quiet = TRUE
 )
 
+
 base_series <- read_excel(
   chemin_merge
 )
+
 
 base3 <- st_read(
   chemin_base3,
@@ -79,16 +91,34 @@ if (!"site_id" %in% names(base1)) {
   stop("site_id absent de aires_protegees.geojson")
 }
 
+
 if (!"site_id" %in% names(base_series)) {
   stop("site_id absent du fichier merge")
 }
+
 
 if (!"site_id" %in% names(base3)) {
   stop("site_id absent de Base 2.geojson")
 }
 
+
 if (!"Annee" %in% names(base_series)) {
   stop("Annee absent du fichier merge")
+}
+
+
+if (!"PAG_a_jour" %in% names(base_series)) {
+  stop("PAG_a_jour absent du fichier merge")
+}
+
+
+if (!"Financement_FCFA" %in% names(base_series)) {
+  stop("Financement_FCFA absent du fichier merge")
+}
+
+
+if (!"Besoin_total_FCFA" %in% names(base_series)) {
+  stop("Besoin_total_FCFA absent du fichier merge")
 }
 
 
@@ -100,27 +130,31 @@ base1$site_id <- as.numeric(
   base1$site_id
 )
 
+
 base_series$site_id <- as.numeric(
   base_series$site_id
 )
 
+
 base3$site_id <- as.numeric(
   base3$site_id
 )
+
 
 base_series$Annee <- as.numeric(
   base_series$Annee
 )
 
 
-# Vérification
 if (any(is.na(base1$site_id))) {
   stop("Certains site_id de la base 1 ne sont pas numériques.")
 }
 
+
 if (any(is.na(base_series$site_id))) {
   stop("Certains site_id de merge ne sont pas numériques.")
 }
+
 
 if (any(is.na(base3$site_id))) {
   stop("Certains site_id de la base 3 ne sont pas numériques.")
@@ -132,12 +166,25 @@ if (any(is.na(base3$site_id))) {
 # ============================================================
 
 base1 <- st_make_valid(base1)
+
 base3 <- st_make_valid(base3)
+
+
+base1 <- base1[
+  !st_is_empty(base1),
+]
+
+
+base3 <- base3[
+  !st_is_empty(base3),
+]
+
 
 base1 <- st_transform(
   base1,
   4326
 )
+
 
 base3 <- st_transform(
   base3,
@@ -146,11 +193,11 @@ base3 <- st_transform(
 
 
 # ============================================================
-# 6. BASE 3 :
-# site_id + geometry UNIQUEMENT
+# 6. BASE 3 : site_id + geometry UNIQUEMENT
 # ============================================================
 
 base3 <- base3 %>%
+  
   select(
     site_id,
     geometry
@@ -162,18 +209,28 @@ base3 <- base3 %>%
 # ============================================================
 
 base1 <- base1 %>%
+  
   mutate(
     
     realm_fr = case_when(
       
-      tolower(trimws(as.character(realm))) ==
-        "terrestrial" ~ "Terrestre",
+      tolower(
+        trimws(
+          as.character(realm)
+        )
+      ) == "terrestrial" ~ "Terrestre",
       
-      tolower(trimws(as.character(realm))) ==
-        "coastal" ~ "Côtier",
+      tolower(
+        trimws(
+          as.character(realm)
+        )
+      ) == "coastal" ~ "Côtier",
       
-      tolower(trimws(as.character(realm))) ==
-        "marine" ~ "Marin",
+      tolower(
+        trimws(
+          as.character(realm)
+        )
+      ) == "marine" ~ "Marin",
       
       TRUE ~ as.character(realm)
       
@@ -243,13 +300,19 @@ variables_financieres <- c(
 
 variables_financieres <-
   variables_financieres[
-    unname(variables_financieres) %in%
+    unname(
+      variables_financieres
+    ) %in%
       names(base_series)
   ]
 
 
 if (length(variables_financieres) == 0) {
-  stop("Aucune variable financière attendue trouvée dans merge.")
+  
+  stop(
+    "Aucune variable financière attendue trouvée dans merge."
+  )
+  
 }
 
 
@@ -287,7 +350,9 @@ vers_numerique <- function(x) {
     return(x)
   }
   
+  
   x <- as.character(x)
+  
   
   x <- gsub(
     "\u00A0",
@@ -296,6 +361,7 @@ vers_numerique <- function(x) {
     fixed = TRUE
   )
   
+  
   x <- gsub(
     " ",
     "",
@@ -303,12 +369,14 @@ vers_numerique <- function(x) {
     fixed = TRUE
   )
   
+  
   x <- gsub(
     ",",
     "",
     x,
     fixed = TRUE
   )
+  
   
   suppressWarnings(
     as.numeric(x)
@@ -321,19 +389,77 @@ base_series <- base_series %>%
   mutate(
     
     across(
+      
       any_of(
         unname(
           variables_financieres
         )
       ),
+      
       vers_numerique
+      
     )
     
   )
 
 
 # ============================================================
-# 12. FONCTION MOYENNE SURE
+# 11 BIS. AJOUT SUPERFICIE + BESOIN PAR HECTARE
+# ============================================================
+
+base_series <- base_series %>%
+  
+  select(
+    -any_of(
+      c(
+        "gis_area",
+        "realm_fr",
+        "desig_eng"
+      )
+    )
+  ) %>%
+  
+  left_join(
+    
+    reference_sites %>%
+      
+      select(
+        site_id,
+        gis_area,
+        realm_fr,
+        desig_eng
+      ),
+    
+    by = "site_id"
+    
+  ) %>%
+  
+  mutate(
+    
+    gis_area =
+      vers_numerique(
+        gis_area
+      ),
+    
+    Besoin_unitaire_FCFA_ha =
+      case_when(
+        
+        !is.na(Besoin_total_FCFA) &
+          !is.na(gis_area) &
+          gis_area > 0 ~
+          
+          Besoin_total_FCFA /
+          gis_area,
+        
+        TRUE ~ NA_real_
+        
+      )
+    
+  )
+
+
+# ============================================================
+# 12. FONCTIONS UTILES
 # ============================================================
 
 moyenne_sure <- function(x) {
@@ -342,10 +468,45 @@ moyenne_sure <- function(x) {
     return(NA_real_)
   }
   
+  
   mean(
     x,
     na.rm = TRUE
   )
+}
+
+
+somme_sure <- function(x) {
+  
+  if (all(is.na(x))) {
+    return(NA_real_)
+  }
+  
+  
+  sum(
+    x,
+    na.rm = TRUE
+  )
+}
+
+
+premiere_non_na <- function(x) {
+  
+  x <- as.character(x)
+  
+  
+  x <- x[
+    !is.na(x) &
+      trimws(x) != ""
+  ]
+  
+  
+  if (length(x) == 0) {
+    return(NA_character_)
+  }
+  
+  
+  x[1]
 }
 
 
@@ -362,10 +523,6 @@ annees <- sort(
 )
 
 
-# IMPORTANT :
-# site_id reste numérique dans la base.
-# Le caractère ici sert uniquement au composant HTML Shiny.
-
 choix_aires <- setNames(
   
   as.character(
@@ -373,19 +530,31 @@ choix_aires <- setNames(
   ),
   
   ifelse(
-    is.na(reference_sites$name_eng),
-    as.character(reference_sites$site_id),
+    
+    is.na(
+      reference_sites$name_eng
+    ),
+    
+    as.character(
+      reference_sites$site_id
+    ),
+    
     reference_sites$name_eng
+    
   )
   
 )
 
 
-choix_colonne <- function(data, variable) {
+choix_colonne <- function(
+    data,
+    variable
+) {
   
   if (!variable %in% names(data)) {
     return(character(0))
   }
+  
   
   sort(
     unique(
@@ -396,6 +565,7 @@ choix_colonne <- function(data, variable) {
       )
     )
   )
+  
 }
 
 
@@ -405,11 +575,13 @@ choix_region <-
     "Region"
   )
 
+
 choix_ecosysteme <-
   choix_colonne(
     base_series,
     "Ecosysteme"
   )
+
 
 choix_gestionnaire <-
   choix_colonne(
@@ -417,11 +589,13 @@ choix_gestionnaire <-
     "Gestionnaire"
   )
 
+
 choix_realm <-
   choix_colonne(
     base1,
     "realm_fr"
   )
+
 
 choix_designation <-
   choix_colonne(
@@ -444,6 +618,7 @@ senegal_contour <- rnaturalearth::ne_countries(
   
 )
 
+
 senegal_contour <- st_transform(
   senegal_contour,
   4326
@@ -451,19 +626,7 @@ senegal_contour <- st_transform(
 
 
 # ============================================================
-# 15. EMPRISE
-# ============================================================
-
-bb <- st_bbox(base1)
-
-xmin <- as.numeric(bb["xmin"])
-ymin <- as.numeric(bb["ymin"])
-xmax <- as.numeric(bb["xmax"])
-ymax <- as.numeric(bb["ymax"])
-
-
-# ============================================================
-# 16. FONCTION DE FILTRAGE
+# 15. FONCTION DE FILTRAGE
 # ============================================================
 
 filtrer_selection <- function(
@@ -473,49 +636,68 @@ filtrer_selection <- function(
 ) {
   
   if (
+    
     is.null(selection) ||
+    
     length(selection) == 0 ||
+    
     "ALL" %in% selection ||
+    
     !variable %in% names(data)
+    
   ) {
     
     return(data)
     
   }
   
+  
   data %>%
+    
     filter(
-      as.character(.data[[variable]]) %in%
+      
+      as.character(
+        .data[[variable]]
+      ) %in%
         selection
+      
     )
+  
 }
 
 
 # ============================================================
-# 17. RAYON DES CERCLES
+# 16. RAYON DES CERCLES
 # ============================================================
 
 rayon_proportionnel <- function(x) {
   
   x <- as.numeric(x)
   
+  
   if (all(is.na(x))) {
+    
     return(
       rep(
         8,
         length(x)
       )
     )
+    
   }
   
+  
   x[is.na(x)] <- 0
+  
   
   x <- pmax(
     x,
     0
   )
   
+  
   r <- sqrt(x)
+  
   
   if (max(r) == min(r)) {
     
@@ -527,6 +709,7 @@ rayon_proportionnel <- function(x) {
     )
     
   }
+  
   
   6 +
     20 *
@@ -541,7 +724,7 @@ rayon_proportionnel <- function(x) {
 
 
 # ============================================================
-# 18. INTERFACE UI
+# 17. INTERFACE UI
 # ============================================================
 
 ui <- fluidPage(
@@ -553,20 +736,148 @@ ui <- fluidPage(
       
       HTML(
         "
+
         html, body {
           height: 100%;
           margin: 0;
           padding: 0;
         }
 
+
         .container-fluid {
-          padding-left: 10px;
-          padding-right: 10px;
+          padding-left: 8px;
+          padding-right: 8px;
         }
+
+
+        h2 {
+          margin-top: 7px;
+          margin-bottom: 7px;
+          font-size: 22px;
+        }
+
+
+        /* ===================================================
+           CARTE : CONTOUR VERT FORET
+           =================================================== */
 
         #carte {
           width: 100%;
+
+          border: 3px solid #1B5E20;
+
+          /* TRAIT VERT FORET PLUS MARQUE A DROITE */
+          border-right: 7px solid #1B5E20;
+
+          box-sizing: border-box;
         }
+
+
+        /* ===================================================
+           PANNEAUX DES GRAPHIQUES
+           =================================================== */
+
+        .mini-panel {
+          height: 235px;
+          border: 1px solid #e0e0e0;
+          border-radius: 5px;
+          padding: 4px;
+          overflow: hidden;
+          background: white;
+        }
+
+
+        /* ===================================================
+           PANNEAU DU TABLEAU
+           =================================================== */
+
+        .table-panel {
+          height: 235px;
+          overflow: auto;
+          font-size: 10px;
+          border: 1px solid #e0e0e0;
+          border-radius: 5px;
+          padding: 5px;
+          background: white;
+        }
+
+
+        .table-panel table {
+          font-size: 10px;
+        }
+
+
+        /* ===================================================
+           ZONE ENTRE LES GRAPHIQUES EN VERT FORET
+           =================================================== */
+
+        .bottom-row {
+          background-color: #1B5E20;
+          padding-top: 7px;
+          padding-bottom: 7px;
+          margin-left: 0px;
+          margin-right: 0px;
+        }
+
+
+        .bottom-row > div {
+          padding-left: 6px;
+          padding-right: 6px;
+        }
+
+
+        /* ===================================================
+           SIDEBAR EN VERT FORET
+           =================================================== */
+
+        .well {
+          background-color: #1B5E20 !important;
+          border-color: #1B5E20 !important;
+        }
+
+
+        /* ===================================================
+           TITRES DU SIDEBAR EN BLANC ET EN GRAS
+           =================================================== */
+
+        .well .control-label {
+          color: white !important;
+          font-weight: 800 !important;
+        }
+
+
+        .well label {
+          color: white !important;
+        }
+
+
+        .well .shiny-options-group > label,
+        .well .checkbox > label {
+          color: white !important;
+        }
+
+
+        /* ===================================================
+           TEXTE A L'INTERIEUR DES CHAMPS
+           =================================================== */
+
+        .well .form-control,
+        .well .selectize-input,
+        .well .selectize-input input {
+          color: #222222 !important;
+        }
+
+
+        /* ===================================================
+           FOND DES CHAMPS EN BLANC
+           =================================================== */
+
+        .well .form-control,
+        .well .selectize-input {
+          background-color: white !important;
+        }
+
+
         "
       )
       
@@ -575,14 +886,25 @@ ui <- fluidPage(
   ),
   
   
+  # ==========================================================
+  # TITRE PRINCIPAL
+  # ==========================================================
+  
   titlePanel(
     
     div(
+      
       style = "
         text-align:center;
-        font-weight:bold;
+        font-weight:800;
+        color:white;
+        background-color:#1B5E20;
+        padding:8px;
+        border-radius:4px;
       ",
-      "Aires protégées du Sénégal"
+      
+      "ANALYSE SPATIALE DES AIRES PROTÉGÉES DU SÉNÉGAL"
+      
     )
     
   ),
@@ -596,6 +918,8 @@ ui <- fluidPage(
     # ========================================================
     
     sidebarPanel(
+      
+      width = 2,
       
       
       selectInput(
@@ -628,8 +952,10 @@ ui <- fluidPage(
         selected = NULL,
         
         options = list(
+          
           placeholder =
             "Choisir une aire ou cliquer sur la carte"
+          
         )
         
       ),
@@ -743,6 +1069,7 @@ ui <- fluidPage(
         condition =
           "input.periode != 'Nothing'",
         
+        
         checkboxGroupInput(
           
           "variables_graph",
@@ -781,7 +1108,8 @@ ui <- fluidPage(
           
         ),
         
-        selected = "polygons"
+        selected =
+          "polygons"
         
       )
       
@@ -794,22 +1122,118 @@ ui <- fluidPage(
     
     mainPanel(
       
+      width = 10,
+      
+      
+      # ======================================================
+      # CARTE
+      # ======================================================
+      
       leafletOutput(
+        
         "carte",
-        height = "650px"
+        
+        height =
+          "410px"
+        
       ),
       
-      br(),
       
-      plotOutput(
-        "graphique",
-        height = "380px"
-      ),
+      # ======================================================
+      # GRAPHIQUES + TABLEAU SUR UNE MEME LIGNE
+      # ======================================================
       
-      br(),
-      
-      tableOutput(
-        "details"
+      fluidRow(
+        
+        class = "bottom-row",
+        
+        
+        column(
+          
+          width = 3,
+          
+          div(
+            
+            class =
+              "mini-panel",
+            
+            plotOutput(
+              
+              "graphique",
+              
+              height =
+                "225px"
+              
+            )
+            
+          )
+          
+        ),
+        
+        
+        column(
+          
+          width = 3,
+          
+          div(
+            
+            class =
+              "mini-panel",
+            
+            plotOutput(
+              
+              "financement_milieu",
+              
+              height =
+                "225px"
+              
+            )
+            
+          )
+          
+        ),
+        
+        
+        column(
+          
+          width = 3,
+          
+          div(
+            
+            class =
+              "mini-panel",
+            
+            plotOutput(
+              
+              "superficie_gestionnaire",
+              
+              height =
+                "225px"
+              
+            )
+            
+          )
+          
+        ),
+        
+        
+        column(
+          
+          width = 3,
+          
+          div(
+            
+            class =
+              "table-panel",
+            
+            tableOutput(
+              "details"
+            )
+            
+          )
+          
+        )
+        
       )
       
     )
@@ -820,7 +1244,7 @@ ui <- fluidPage(
 
 
 # ============================================================
-# 19. SERVEUR
+# 18. SERVEUR
 # ============================================================
 
 server <- function(
@@ -841,11 +1265,12 @@ server <- function(
       input$periode == "Nothing"
     ) {
       
+      
       selectInput(
         
         "variable_carte",
         
-        "Variable à visualiser",
+        "Choix de visualisation",
         
         choices =
           variables_descriptives,
@@ -855,7 +1280,9 @@ server <- function(
         
       )
       
+      
     } else {
+      
       
       selectInput(
         
@@ -1018,7 +1445,7 @@ server <- function(
   
   
   # ==========================================================
-  # CLIC SUR LA CARTE
+  # CLIC CARTE -> SIDEBAR
   # ==========================================================
   
   observeEvent(
@@ -1033,8 +1460,9 @@ server <- function(
         !is.null(id_click)
       ) {
         
+        
         id_click <-
-          as.numeric(
+          as.character(
             id_click
           )
         
@@ -1046,15 +1474,14 @@ server <- function(
           "aire",
           
           selected =
-            as.character(
-              id_click
-            )
+            id_click
           
         )
         
       }
       
     }
+    
   )
   
   
@@ -1065,7 +1492,8 @@ server <- function(
   series_filtrees <- reactive({
     
     
-    data <- base_series
+    data <-
+      base_series
     
     
     data <- filtrer_selection(
@@ -1089,6 +1517,64 @@ server <- function(
     )
     
     
+    data <- filtrer_selection(
+      data,
+      "realm_fr",
+      input$realm_filtre
+    )
+    
+    
+    data <- filtrer_selection(
+      data,
+      "desig_eng",
+      input$designation_filtre
+    )
+    
+    
+    data
+    
+  })
+  
+  
+  # ==========================================================
+  # DONNEES DE LA PERIODE
+  # ==========================================================
+  
+  donnees_periode <- reactive({
+    
+    
+    data <-
+      series_filtrees()
+    
+    
+    if (
+      input$periode == "Nothing"
+    ) {
+      
+      return(data)
+      
+    }
+    
+    
+    if (
+      input$periode != "ALL"
+    ) {
+      
+      
+      data <- data %>%
+        
+        filter(
+          
+          Annee ==
+            as.numeric(
+              input$periode
+            )
+          
+        )
+      
+    }
+    
+    
     data
     
   })
@@ -1106,17 +1592,51 @@ server <- function(
     )
     
     
-    # ========================================================
-    # NOTHING = BASE 1
-    # ========================================================
-    
     if (
-      input$periode ==
-      "Nothing"
+      input$periode == "Nothing"
     ) {
       
       
-      data <- base1
+      infos_recentes <-
+        base_series %>%
+        
+        filter(
+          !is.na(Annee)
+        ) %>%
+        
+        arrange(
+          site_id,
+          desc(Annee)
+        ) %>%
+        
+        group_by(
+          site_id
+        ) %>%
+        
+        summarise(
+          
+          PAG_a_jour =
+            premiere_non_na(
+              PAG_a_jour
+            ),
+          
+          Besoin_unitaire_FCFA_ha =
+            moyenne_sure(
+              Besoin_unitaire_FCFA_ha
+            ),
+          
+          .groups =
+            "drop"
+          
+        )
+      
+      
+      data <- base1 %>%
+        
+        left_join(
+          infos_recentes,
+          by = "site_id"
+        )
       
       
       data <- filtrer_selection(
@@ -1138,32 +1658,8 @@ server <- function(
     }
     
     
-    # ========================================================
-    # ALL OU ANNEE PRECISE
-    # ========================================================
-    
-    serie <- series_filtrees()
-    
-    
-    if (
-      input$periode !=
-      "ALL"
-    ) {
-      
-      annee_selectionnee <-
-        as.numeric(
-          input$periode
-        )
-      
-      
-      serie <- serie %>%
-        
-        filter(
-          Annee ==
-            annee_selectionnee
-        )
-      
-    }
+    serie <-
+      donnees_periode()
     
     
     variable <-
@@ -1189,6 +1685,35 @@ server <- function(
       )
     
     
+    infos_popup <- serie %>%
+      
+      arrange(
+        site_id,
+        desc(Annee)
+      ) %>%
+      
+      group_by(
+        site_id
+      ) %>%
+      
+      summarise(
+        
+        PAG_a_jour =
+          premiere_non_na(
+            PAG_a_jour
+          ),
+        
+        Besoin_unitaire_FCFA_ha =
+          moyenne_sure(
+            Besoin_unitaire_FCFA_ha
+          ),
+        
+        .groups =
+          "drop"
+        
+      )
+    
+    
     data <- base3 %>%
       
       left_join(
@@ -1198,6 +1723,11 @@ server <- function(
       
       left_join(
         valeurs,
+        by = "site_id"
+      ) %>%
+      
+      left_join(
+        infos_popup,
         by = "site_id"
       )
     
@@ -1276,7 +1806,8 @@ server <- function(
     data$nom_affichage <-
       ifelse(
         
-        is.na(data$name_eng),
+        is.na(data$name_eng) |
+          data$name_eng == "",
         
         as.character(
           data$site_id
@@ -1287,13 +1818,95 @@ server <- function(
       )
     
     
+    data$pag_affichage <-
+      ifelse(
+        
+        is.na(
+          data$PAG_a_jour
+        ) |
+          data$PAG_a_jour == "",
+        
+        "Non renseigné",
+        
+        as.character(
+          data$PAG_a_jour
+        )
+        
+      )
+    
+    
+    data$superficie_affichage <-
+      ifelse(
+        
+        is.na(
+          data$gis_area
+        ),
+        
+        "Non disponible",
+        
+        paste0(
+          
+          format(
+            
+            round(
+              data$gis_area,
+              0
+            ),
+            
+            big.mark = " ",
+            
+            scientific = FALSE,
+            
+            trim = TRUE
+            
+          ),
+          
+          " ha"
+          
+        )
+        
+      )
+    
+    
+    data$besoin_unitaire_affichage <-
+      ifelse(
+        
+        is.na(
+          data$Besoin_unitaire_FCFA_ha
+        ),
+        
+        "Non disponible",
+        
+        paste0(
+          
+          format(
+            
+            round(
+              data$Besoin_unitaire_FCFA_ha,
+              0
+            ),
+            
+            big.mark = " ",
+            
+            scientific = FALSE,
+            
+            trim = TRUE
+            
+          ),
+          
+          " FCFA/ha"
+          
+        )
+        
+      )
+    
+    
     # ========================================================
-    # COULEURS - MODE NOTHING
+    # MODE DESCRIPTIF
     # ========================================================
     
     if (
-      input$periode ==
-      "Nothing"
+      input$periode == "Nothing"
     ) {
       
       
@@ -1302,15 +1915,19 @@ server <- function(
       
       
       if (
-        variable ==
-        "realm_fr"
+        variable == "realm_fr"
       ) {
         
+        
+        # ====================================================
+        # COULEURS DES MILIEUX
+        # TERRESTRE = VERT FORET
+        # ====================================================
         
         couleurs_realm <- c(
           
           "Terrestre" =
-            "#2E7D32",
+            "#1B5E20",
           
           "Côtier" =
             "#FFD54F",
@@ -1328,7 +1945,9 @@ server <- function(
         
         
         data$couleur[
-          is.na(data$couleur)
+          is.na(
+            data$couleur
+          )
         ] <- "#BDBDBD"
         
         
@@ -1366,7 +1985,9 @@ server <- function(
         
         
         data$couleur <-
-          pal(valeurs)
+          pal(
+            valeurs
+          )
         
         
         type_legende <-
@@ -1391,7 +2012,9 @@ server <- function(
         
         
         data$couleur <-
-          pal(valeurs)
+          pal(
+            valeurs
+          )
         
         
         type_legende <-
@@ -1407,8 +2030,8 @@ server <- function(
           data$nom_affichage,
           "</b>",
           
-          "<br><b>ID :</b> ",
-          data$site_id,
+          "<br><b>PAG à jour :</b> ",
+          data$pag_affichage,
           
           "<br><b>Milieu :</b> ",
           data$realm_fr,
@@ -1420,14 +2043,13 @@ server <- function(
           data$iucn_cat,
           
           "<br><b>Superficie :</b> ",
-          data$gis_area
+          data$superficie_affichage,
+          
+          "<br><b>Besoin par unité de surface :</b> ",
+          data$besoin_unitaire_affichage
           
         )
       
-      
-      # ========================================================
-      # COULEURS - MODE ALL / ANNEE
-      # ========================================================
       
     } else {
       
@@ -1461,7 +2083,9 @@ server <- function(
       
       
       data$couleur <-
-        pal(valeurs)
+        pal(
+          valeurs
+        )
       
       
       type_legende <-
@@ -1471,14 +2095,46 @@ server <- function(
       periode_txt <-
         ifelse(
           
-          input$periode ==
-            "ALL",
+          input$periode == "ALL",
           
-          "Moyenne de toutes les années",
+          "Toutes les années",
           
           paste(
             "Année",
             input$periode
+          )
+          
+        )
+      
+      
+      data$valeur_affichage <-
+        ifelse(
+          
+          is.na(
+            data$valeur_carte
+          ),
+          
+          "Non disponible",
+          
+          paste0(
+            
+            format(
+              
+              round(
+                data$valeur_carte,
+                0
+              ),
+              
+              big.mark = " ",
+              
+              scientific = FALSE,
+              
+              trim = TRUE
+              
+            ),
+            
+            " FCFA"
+            
           )
           
         )
@@ -1491,22 +2147,18 @@ server <- function(
           data$nom_affichage,
           "</b>",
           
-          "<br><b>ID :</b> ",
-          data$site_id,
+          "<br><b>PAG à jour :</b> ",
+          data$pag_affichage,
           
           "<br><b>",
           periode_txt,
           "</b>",
           
           "<br><b>Valeur :</b> ",
-          format(
-            round(
-              data$valeur_carte
-            ),
-            big.mark = " ",
-            scientific = FALSE
-          ),
-          " FCFA"
+          data$valeur_affichage,
+          
+          "<br><b>Besoin par unité de surface :</b> ",
+          data$besoin_unitaire_affichage
           
         )
       
@@ -1514,7 +2166,7 @@ server <- function(
     
     
     # ========================================================
-    # CREATION DE LA CARTE
+    # CREATION CARTE
     # ========================================================
     
     carte <- leaflet(
@@ -1529,7 +2181,7 @@ server <- function(
             5,
           
           maxZoom =
-            18
+            12
           
         )
       
@@ -1546,8 +2198,7 @@ server <- function(
     # ========================================================
     
     if (
-      input$map_type ==
-      "polygons"
+      input$map_type == "polygons"
     ) {
       
       
@@ -1603,30 +2254,33 @@ server <- function(
     # ========================================================
     
     if (
-      input$map_type ==
-      "circles"
+      input$map_type == "circles"
     ) {
       
       
       points <-
         suppressWarnings(
+          
           st_point_on_surface(
             data
           )
+          
         )
       
       
       if (
-        input$periode ==
-        "Nothing"
+        input$periode == "Nothing"
       ) {
+        
         
         points$rayon <-
           rayon_proportionnel(
             points$gis_area
           )
         
+        
       } else {
+        
         
         points$rayon <-
           rayon_proportionnel(
@@ -1673,7 +2327,7 @@ server <- function(
     
     
     # ========================================================
-    # CONTOUR NATIONAL
+    # CONTOUR NATIONAL EN VERT FORET
     # ========================================================
     
     carte <- carte %>%
@@ -1684,10 +2338,10 @@ server <- function(
           senegal_contour,
         
         color =
-          "#111111",
+          "#1B5E20",
         
         weight =
-          4,
+          3,
         
         opacity =
           1,
@@ -1705,12 +2359,11 @@ server <- function(
     
     
     # ========================================================
-    # LEGENDE
+    # LEGENDE EN HAUT A DROITE
     # ========================================================
     
     if (
-      type_legende ==
-      "realm"
+      type_legende == "realm"
     ) {
       
       
@@ -1733,7 +2386,7 @@ server <- function(
         addLegend(
           
           position =
-            "bottomright",
+            "topright",
           
           colors =
             unname(
@@ -1746,7 +2399,7 @@ server <- function(
             presente,
           
           title =
-            "Aires protégées",
+            "Milieu",
           
           opacity =
             1
@@ -1762,7 +2415,7 @@ server <- function(
         addLegend(
           
           position =
-            "bottomright",
+            "topright",
           
           pal =
             pal,
@@ -1793,25 +2446,35 @@ server <- function(
     }
     
     
-    # ========================================================
-    # CADRAGE
-    # ========================================================
+    bbox <-
+      st_bbox(
+        senegal_contour
+      )
+    
     
     carte %>%
       
       fitBounds(
         
         lng1 =
-          xmin,
+          unname(
+            bbox["xmin"]
+          ),
         
         lat1 =
-          ymin,
+          unname(
+            bbox["ymin"]
+          ),
         
         lng2 =
-          xmax,
+          unname(
+            bbox["xmax"]
+          ),
         
         lat2 =
-          ymax
+          unname(
+            bbox["ymax"]
+          )
         
       )
     
@@ -1819,37 +2482,179 @@ server <- function(
   
   
   # ==========================================================
-  # GRAPHIQUE
+  # SIDEBAR -> SELECTION SUR LA CARTE
+  # ==========================================================
+  
+  observe({
+    
+    
+    req(
+      input$aire
+    )
+    
+    
+    id_selectionne <-
+      as.character(
+        input$aire
+      )
+    
+    
+    data_actuelle <-
+      donnees_carte()
+    
+    
+    aire_selectionnee <-
+      data_actuelle %>%
+      
+      filter(
+        
+        as.character(
+          site_id
+        ) ==
+          id_selectionne
+        
+      )
+    
+    
+    if (
+      nrow(
+        aire_selectionnee
+      ) == 0
+    ) {
+      
+      
+      aire_selectionnee <-
+        base1 %>%
+        
+        filter(
+          
+          as.character(
+            site_id
+          ) ==
+            id_selectionne
+          
+        )
+      
+    }
+    
+    
+    req(
+      nrow(
+        aire_selectionnee
+      ) > 0
+    )
+    
+    
+    bbox_selection <-
+      st_bbox(
+        aire_selectionnee
+      )
+    
+    
+    leafletProxy(
+      "carte"
+    ) %>%
+      
+      clearGroup(
+        "selection"
+      ) %>%
+      
+      addPolygons(
+        
+        data =
+          aire_selectionnee,
+        
+        group =
+          "selection",
+        
+        color =
+          "#FF8C00",
+        
+        weight =
+          5,
+        
+        opacity =
+          1,
+        
+        fill =
+          FALSE,
+        
+        options =
+          pathOptions(
+            interactive =
+              FALSE
+          )
+        
+      ) %>%
+      
+      fitBounds(
+        
+        lng1 =
+          unname(
+            bbox_selection["xmin"]
+          ),
+        
+        lat1 =
+          unname(
+            bbox_selection["ymin"]
+          ),
+        
+        lng2 =
+          unname(
+            bbox_selection["xmax"]
+          ),
+        
+        lat2 =
+          unname(
+            bbox_selection["ymax"]
+          )
+        
+      )
+    
+  })
+  
+  
+  # ==========================================================
+  # GRAPHIQUE HISTORIQUE / SERIE TEMPORELLE
   # ==========================================================
   
   output$graphique <- renderPlot({
     
     
+    if (
+      input$periode == "Nothing"
+    ) {
+      
+      return(NULL)
+      
+    }
+    
+    
     shiny::validate(
       
       shiny::need(
-        input$periode !=
-          "Nothing",
-        "Choisissez ALL ou une année."
-      ),
-      
-      shiny::need(
-        !is.null(input$aire) &&
+        
+        !is.null(
+          input$aire
+        ) &&
           input$aire != "",
-        "Choisissez une aire ou cliquez sur la carte."
+        
+        "Choisissez une aire."
+        
       ),
       
       shiny::need(
+        
         length(
           input$variables_graph
         ) > 0,
-        "Choisissez au moins une variable."
+        
+        "Choisissez une variable."
+        
       )
       
     )
     
-    
-    # Conversion de l'ID choisi vers numérique
     
     id_selectionne <-
       as.numeric(
@@ -1866,22 +2671,19 @@ server <- function(
     
     
     if (
-      input$periode !=
-      "ALL"
+      input$periode != "ALL"
     ) {
-      
-      
-      annee_selectionnee <-
-        as.numeric(
-          input$periode
-        )
       
       
       data <- data %>%
         
         filter(
+          
           Annee ==
-            annee_selectionnee
+            as.numeric(
+              input$periode
+            )
+          
         )
       
     }
@@ -1891,7 +2693,7 @@ server <- function(
       
       shiny::need(
         nrow(data) > 0,
-        "Aucune donnée pour cette aire."
+        "Aucune donnée."
       )
       
     )
@@ -1900,10 +2702,13 @@ server <- function(
     data_long <- data %>%
       
       select(
+        
         Annee,
+        
         all_of(
           input$variables_graph
         )
+        
       ) %>%
       
       pivot_longer(
@@ -1939,10 +2744,12 @@ server <- function(
     
     nom_site <-
       reference_sites$name_eng[
+        
         match(
           id_selectionne,
           reference_sites$site_id
         )
+        
       ]
     
     
@@ -1959,13 +2766,8 @@ server <- function(
     }
     
     
-    # ========================================================
-    # ALL = EVOLUTION DANS LE TEMPS
-    # ========================================================
-    
     if (
-      input$periode ==
-      "ALL"
+      input$periode == "ALL"
     ) {
       
       
@@ -1974,29 +2776,38 @@ server <- function(
         data_long,
         
         aes(
-          x = Annee,
-          y = Valeur,
-          color = Indicateur,
-          group = Indicateur
+          
+          x =
+            Annee,
+          
+          y =
+            Valeur,
+          
+          color =
+            Indicateur,
+          
+          group =
+            Indicateur
+          
         )
         
       ) +
         
         geom_line(
           linewidth =
-            1.1
+            0.9
         ) +
         
         geom_point(
           size =
-            3
+            2
         ) +
         
         labs(
           
           title =
             paste(
-              "Évolution des indicateurs -",
+              "Évolution -",
               nom_site
             ),
           
@@ -2004,7 +2815,7 @@ server <- function(
             "Année",
           
           y =
-            "Montant (FCFA)",
+            "FCFA",
           
           color =
             "Indicateur"
@@ -2012,12 +2823,14 @@ server <- function(
         ) +
         
         scale_x_continuous(
+          
           breaks =
             sort(
               unique(
                 data_long$Annee
               )
             )
+          
         ) +
         
         scale_y_continuous(
@@ -2026,10 +2839,15 @@ server <- function(
             function(x) {
               
               format(
+                
                 x,
+                
                 big.mark = " ",
+                
                 scientific = FALSE,
+                
                 trim = TRUE
+                
               )
               
             }
@@ -2038,13 +2856,36 @@ server <- function(
         
         theme_minimal(
           base_size =
-            13
+            8
+        ) +
+        
+        theme(
+          
+          plot.title =
+            element_text(
+              size = 10,
+              face = "bold",
+              hjust = 0.5
+            ),
+          
+          legend.position =
+            "top",
+          
+          legend.justification =
+            "right",
+          
+          legend.title =
+            element_text(
+              size = 7
+            ),
+          
+          legend.text =
+            element_text(
+              size = 6
+            )
+          
         )
       
-      
-      # ========================================================
-      # ANNEE PRECISE
-      # ========================================================
       
     } else {
       
@@ -2054,9 +2895,16 @@ server <- function(
         data_long,
         
         aes(
-          x = Indicateur,
-          y = Valeur,
-          fill = Indicateur
+          
+          x =
+            Indicateur,
+          
+          y =
+            Valeur,
+          
+          fill =
+            Indicateur
+          
         )
         
       ) +
@@ -2079,7 +2927,7 @@ server <- function(
             NULL,
           
           y =
-            "Montant (FCFA)"
+            "FCFA"
           
         ) +
         
@@ -2089,10 +2937,15 @@ server <- function(
             function(x) {
               
               format(
+                
                 x,
+                
                 big.mark = " ",
+                
                 scientific = FALSE,
+                
                 trim = TRUE
+                
               )
               
             }
@@ -2101,17 +2954,23 @@ server <- function(
         
         theme_minimal(
           base_size =
-            13
+            8
         ) +
         
         theme(
           
+          plot.title =
+            element_text(
+              size = 10,
+              face = "bold",
+              hjust = 0.5
+            ),
+          
           axis.text.x =
             element_text(
-              angle =
-                35,
-              hjust =
-                1
+              angle = 35,
+              hjust = 1,
+              size = 6
             ),
           
           legend.position =
@@ -2120,6 +2979,584 @@ server <- function(
         )
       
     }
+    
+  })
+  
+  
+  # ==========================================================
+  # DIAGRAMME CIRCULAIRE :
+  # FINANCEMENT PAR MILIEU
+  # ==========================================================
+  
+  output$financement_milieu <- renderPlot({
+    
+    
+    if (
+      input$periode == "Nothing"
+    ) {
+      
+      return(NULL)
+      
+    }
+    
+    
+    data <-
+      donnees_periode()
+    
+    
+    financement_realm <- data %>%
+      
+      filter(
+        
+        !is.na(
+          realm_fr
+        ),
+        
+        !is.na(
+          Financement_FCFA
+        )
+        
+      ) %>%
+      
+      group_by(
+        realm_fr
+      ) %>%
+      
+      summarise(
+        
+        Financement =
+          somme_sure(
+            Financement_FCFA
+          ),
+        
+        .groups =
+          "drop"
+        
+      ) %>%
+      
+      filter(
+        
+        !is.na(
+          Financement
+        ),
+        
+        Financement > 0
+        
+      )
+    
+    
+    shiny::validate(
+      
+      shiny::need(
+        
+        nrow(
+          financement_realm
+        ) > 0,
+        
+        "Aucun financement disponible."
+        
+      )
+      
+    )
+    
+    
+    financement_realm <-
+      financement_realm %>%
+      
+      mutate(
+        
+        Pourcentage =
+          100 *
+          Financement /
+          sum(
+            Financement
+          )
+        
+      )
+    
+    
+    ggplot(
+      
+      financement_realm,
+      
+      aes(
+        
+        x = "",
+        
+        y =
+          Financement,
+        
+        fill =
+          realm_fr
+        
+      )
+      
+    ) +
+      
+      geom_col(
+        width = 1
+      ) +
+      
+      coord_polar(
+        theta = "y"
+      ) +
+      
+      geom_text(
+        
+        aes(
+          
+          label =
+            paste0(
+              round(
+                Pourcentage,
+                1
+              ),
+              "%"
+            )
+          
+        ),
+        
+        position =
+          position_stack(
+            vjust = 0.5
+          ),
+        
+        size =
+          3
+        
+      ) +
+      
+      scale_fill_manual(
+        
+        values = c(
+          
+          "Terrestre" =
+            "#1B5E20",
+          
+          "Côtier" =
+            "#FFD54F",
+          
+          "Marin" =
+            "#0D47A1"
+          
+        ),
+        
+        na.value =
+          "#BDBDBD"
+        
+      ) +
+      
+      labs(
+        
+        title =
+          "Financement annuel par milieu",
+        
+        fill =
+          "Milieu"
+        
+      ) +
+      
+      theme_void(
+        base_size =
+          8
+      ) +
+      
+      theme(
+        
+        plot.title =
+          element_text(
+            size = 10,
+            face = "bold",
+            hjust = 0.5
+          ),
+        
+        legend.position =
+          "bottom",
+        
+        legend.title =
+          element_text(
+            size = 7
+          ),
+        
+        legend.text =
+          element_text(
+            size = 7
+          )
+        
+      )
+    
+  })
+  
+  
+  # ==========================================================
+  # PART FINANCIERE PAR GESTIONNAIRE EN POURCENTAGE
+  # POUR L'AIRE PROTEGEE SELECTIONNEE
+  # ==========================================================
+  
+  output$superficie_gestionnaire <- renderPlot({
+    
+    
+    if (
+      input$periode == "Nothing"
+    ) {
+      
+      return(NULL)
+      
+    }
+    
+    
+    # ========================================================
+    # VERIFIER QU'UNE AIRE PROTEGEE EST SELECTIONNEE
+    # ========================================================
+    
+    shiny::validate(
+      
+      shiny::need(
+        
+        !is.null(
+          input$aire
+        ) &&
+          input$aire != "",
+        
+        "Choisissez une aire protégée."
+        
+      )
+      
+    )
+    
+    
+    # ========================================================
+    # DONNEES DE LA PERIODE
+    # ========================================================
+    
+    data <-
+      donnees_periode()
+    
+    
+    # ========================================================
+    # FILTRAGE SUR L'AIRE PROTEGEE SELECTIONNEE
+    # ========================================================
+    
+    id_selectionne <-
+      as.numeric(
+        input$aire
+      )
+    
+    
+    data <- data %>%
+      
+      filter(
+        
+        site_id ==
+          id_selectionne
+        
+      )
+    
+    
+    # ========================================================
+    # VERIFICATION DES DONNEES DE L'AIRE
+    # ========================================================
+    
+    shiny::validate(
+      
+      shiny::need(
+        
+        nrow(data) > 0,
+        
+        "Aucune donnée disponible pour cette aire protégée."
+        
+      )
+      
+    )
+    
+    
+    # ========================================================
+    # CALCUL DU FINANCEMENT PAR GESTIONNAIRE
+    # ========================================================
+    
+    financement_gestion <- data %>%
+      
+      filter(
+        
+        !is.na(
+          Gestionnaire
+        ),
+        
+        trimws(
+          as.character(
+            Gestionnaire
+          )
+        ) != "",
+        
+        !is.na(
+          Financement_FCFA
+        ),
+        
+        Financement_FCFA > 0
+        
+      ) %>%
+      
+      group_by(
+        Gestionnaire
+      ) %>%
+      
+      summarise(
+        
+        Financement_total =
+          sum(
+            Financement_FCFA,
+            na.rm = TRUE
+          ),
+        
+        .groups =
+          "drop"
+        
+      )
+    
+    
+    # ========================================================
+    # VERIFICATION DU FINANCEMENT
+    # ========================================================
+    
+    shiny::validate(
+      
+      shiny::need(
+        
+        nrow(
+          financement_gestion
+        ) > 0,
+        
+        "Aucun financement disponible par gestionnaire."
+        
+      ),
+      
+      shiny::need(
+        
+        sum(
+          financement_gestion$Financement_total,
+          na.rm = TRUE
+        ) > 0,
+        
+        "Le financement total est nul."
+        
+      )
+      
+    )
+    
+    
+    # ========================================================
+    # CALCUL DU POURCENTAGE
+    # ========================================================
+    
+    financement_gestion <-
+      financement_gestion %>%
+      
+      mutate(
+        
+        Pourcentage =
+          100 *
+          Financement_total /
+          sum(
+            Financement_total,
+            na.rm = TRUE
+          )
+        
+      )
+    
+    
+    # ========================================================
+    # NOM DE L'AIRE PROTEGEE
+    # ========================================================
+    
+    nom_aire <-
+      reference_sites$name_eng[
+        
+        match(
+          id_selectionne,
+          reference_sites$site_id
+        )
+        
+      ]
+    
+    
+    if (
+      
+      length(
+        nom_aire
+      ) == 0 ||
+      
+      is.na(
+        nom_aire
+      ) ||
+      
+      nom_aire == ""
+      
+    ) {
+      
+      nom_aire <-
+        as.character(
+          id_selectionne
+        )
+      
+    }
+    
+    
+    # ========================================================
+    # GRAPHIQUE
+    # ========================================================
+    
+    ggplot(
+      
+      financement_gestion,
+      
+      aes(
+        
+        x =
+          reorder(
+            Gestionnaire,
+            Pourcentage
+          ),
+        
+        y =
+          Pourcentage
+        
+      )
+      
+    ) +
+      
+      geom_col(
+        
+        width =
+          0.65,
+        
+        fill =
+          "#1B5E20"
+        
+      ) +
+      
+      # ======================================================
+    # POURCENTAGE A COTE DE CHAQUE BARRE
+    # ======================================================
+    
+    geom_text(
+      
+      aes(
+        
+        label =
+          paste0(
+            round(
+              Pourcentage,
+              1
+            ),
+            " %"
+          )
+        
+      ),
+      
+      hjust =
+        -0.15,
+      
+      size =
+        3
+      
+    ) +
+      
+      coord_flip(
+        clip = "off"
+      ) +
+      
+      labs(
+        
+        title =
+          paste0(
+            "Part financière par gestionnaire - ",
+            nom_aire
+          ),
+        
+        x =
+          NULL,
+        
+        y =
+          "Part dans le financement total (%)"
+        
+      ) +
+      
+      # ======================================================
+    # AXE GRADUE EN POURCENTAGE
+    # ======================================================
+    
+    scale_y_continuous(
+      
+      limits =
+        c(
+          0,
+          110
+        ),
+      
+      breaks =
+        seq(
+          0,
+          100,
+          20
+        ),
+      
+      labels =
+        function(x) {
+          
+          paste0(
+            round(
+              x,
+              0
+            ),
+            " %"
+          )
+          
+        },
+      
+      expand =
+        expansion(
+          mult =
+            c(
+              0,
+              0.02
+            )
+        )
+      
+    ) +
+      
+      theme_minimal(
+        base_size =
+          8
+      ) +
+      
+      theme(
+        
+        plot.title =
+          element_text(
+            size = 9,
+            face = "bold",
+            hjust = 0.5
+          ),
+        
+        axis.text.y =
+          element_text(
+            size = 6
+          ),
+        
+        axis.text.x =
+          element_text(
+            size = 6
+          ),
+        
+        plot.margin =
+          margin(
+            5,
+            20,
+            5,
+            5
+          )
+        
+      )
     
   })
   
@@ -2142,49 +3579,114 @@ server <- function(
       )
     
     
-    # ========================================================
-    # NOTHING
-    # ========================================================
-    
     if (
-      input$periode ==
-      "Nothing"
+      input$periode == "Nothing"
     ) {
       
       
-      return(
+      info_financiere <-
+        base_series %>%
         
-        reference_sites %>%
+        filter(
+          site_id ==
+            id_selectionne
+        ) %>%
+        
+        arrange(
+          desc(Annee)
+        ) %>%
+        
+        summarise(
           
-          filter(
-            site_id ==
-              id_selectionne
-          )
-        
-      )
+          PAG_a_jour =
+            premiere_non_na(
+              PAG_a_jour
+            ),
+          
+          Besoin_unitaire_FCFA_ha =
+            moyenne_sure(
+              Besoin_unitaire_FCFA_ha
+            )
+          
+        )
       
-    }
-    
-    
-    # ========================================================
-    # ALL
-    # ========================================================
-    
-    if (
-      input$periode ==
-      "ALL"
-    ) {
+      
+      resultat <-
+        reference_sites %>%
+        
+        filter(
+          site_id ==
+            id_selectionne
+        ) %>%
+        
+        select(
+          -site_id
+        ) %>%
+        
+        bind_cols(
+          info_financiere
+        )
+      
       
       return(
-        NULL
+        resultat
       )
       
     }
     
     
-    # ========================================================
-    # ANNEE PRECISE
-    # ========================================================
+    if (
+      input$periode == "ALL"
+    ) {
+      
+      
+      resultat <-
+        base_series %>%
+        
+        filter(
+          site_id ==
+            id_selectionne
+        ) %>%
+        
+        arrange(
+          desc(Annee)
+        ) %>%
+        
+        slice_head(
+          n = 1
+        ) %>%
+        
+        select(
+          
+          any_of(
+            c(
+              
+              "name_eng",
+              "Annee",
+              "PAG_a_jour",
+              "Region",
+              "Ecosysteme",
+              "Gestionnaire",
+              "Ramsar",
+              "UNESCO",
+              "Pression_ecologique",
+              "Score_capacite",
+              "Besoin_unitaire_FCFA_ha",
+              "Categorie_source",
+              "Date_MAJ"
+              
+            )
+          )
+          
+        )
+      
+      
+      return(
+        resultat
+      )
+      
+    }
+    
     
     annee_selectionnee <-
       as.numeric(
@@ -2209,17 +3711,17 @@ server <- function(
         any_of(
           c(
             
-            "site_id",
             "name_eng",
             "Annee",
+            "PAG_a_jour",
             "Region",
             "Ecosysteme",
             "Gestionnaire",
             "Ramsar",
             "UNESCO",
-            "PAG_a_jour",
             "Pression_ecologique",
             "Score_capacite",
+            "Besoin_unitaire_FCFA_ha",
             
             unname(
               variables_financieres
@@ -2239,12 +3741,10 @@ server <- function(
 
 
 # ============================================================
-# 20. LANCEMENT
+# 19. LANCEMENT
 # ============================================================
 
 shinyApp(
   ui = ui,
   server = server
 )
-
-

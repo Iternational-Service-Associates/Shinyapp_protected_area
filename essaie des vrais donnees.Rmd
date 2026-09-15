@@ -1,0 +1,715 @@
+---
+title: "Untitled"
+author: "BRUNO"
+date: "2026-09-04"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(sf)
+library(leaflet)
+
+# Chemin du shapefile
+chemin <- "C:/Users/H P/Desktop/SHYNI-APP/FFCB-SN_Livrable_3_Donnees_SI.zip/FFCB-SN_Livrable_3_Donnees_SI/FFCB-SN_Livrable_3_Donnees_SI.shp"
+
+# Charger le shapefile
+aires <- st_read(
+  chemin,
+  quiet = TRUE
+)
+
+# Voir la table attributaire
+View(aires)
+
+# Voir les noms des variables
+names(aires)
+
+# Vérifier le type de géométrie
+st_geometry_type(aires)
+
+# Transformer en WGS84 pour Leaflet
+aires <- st_transform(aires, 4326)
+
+# Visualiser les polygones
+leaflet(aires) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(
+    weight = 1,
+    fillOpacity = 0.5
+  )
+```
+
+
+```{r}
+library(sf)
+library(leaflet)
+
+# Chemin du fichier ZIP
+zip_file <- "C:/Users/H P/Desktop/SHYNI-APP/FFCB-SN_Livrable_3_Donnees_SI.zip"
+
+# Dossier où extraire les fichiers
+dossier_sortie <- "C:/Users/H P/Desktop/SHYNI-APP/FFCB-SN_Livrable_3_Donnees_SI"
+
+# Décompresser
+unzip(zip_file, exdir = dossier_sortie)
+
+# Vérifier les fichiers présents
+list.files(dossier_sortie, recursive = TRUE)
+
+# Charger le shapefile
+aires <- st_read(
+  file.path(
+    dossier_sortie,
+    "FFCB-SN_Livrable_3_Donnees_SI.shp"
+  ),
+  quiet = TRUE
+)
+
+# Transformer pour Leaflet
+aires <- st_transform(aires, 4326)
+
+# Visualiser
+leaflet(aires) %>%
+  addTiles() %>%
+  addPolygons()
+```
+
+
+```{r}
+library(sf)
+library(leaflet)
+
+# Chemin du shapefile
+chemin <- "C:/Users/H P/Desktop/SHYNI-APP/data/FFCB-SN_Livrable_3_Donnees_SI/FFCB-SN_Livrable_3_Donnees_SI.shp"
+
+# Charger le shapefile
+aires <- st_read(
+  chemin,
+  quiet = TRUE
+)
+
+# Vérifier les données
+View(aires)
+names(aires)
+
+# Transformer en WGS84 pour Leaflet
+aires <- st_transform(aires, 4326)
+
+# Visualiser sur une carte interactive
+leaflet(aires) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(
+    weight = 1,
+    fillOpacity = 0.5
+  )
+```
+
+```{r}
+# ============================================
+# VISUALISER UN SHAPEFILE DANS R / LEAFLET
+# ============================================
+
+library(sf)
+library(leaflet)
+
+# 1. Dossier contenant le shapefile
+dossier <- "C:/Users/H P/Desktop/SHYNI-APP/data/FFCB-SN_Livrable_3_Donnees_SI"
+
+# 2. Rechercher automatiquement le fichier .shp
+shp <- list.files(
+  path = dossier,
+  pattern = "\\.shp$",
+  full.names = TRUE,
+  recursive = TRUE
+)
+
+# 3. Vérifier qu'un shapefile a été trouvé
+if (length(shp) == 0) {
+  stop("Aucun fichier .shp trouvé dans le dossier.")
+}
+
+# Afficher le fichier trouvé
+print(shp)
+
+# 4. Importer le shapefile
+aires <- st_read(
+  shp[1],
+  quiet = TRUE
+)
+
+# 5. Vérifier la base
+View(aires)
+names(aires)
+
+# 6. Vérifier le système de coordonnées
+print(st_crs(aires))
+
+# 7. Transformer en WGS84 pour Leaflet
+aires <- st_transform(
+  aires,
+  crs = 4326
+)
+
+# 8. Visualiser sur une carte interactive
+leaflet(aires) %>%
+  
+  addProviderTiles(
+    providers$CartoDB.Positron
+  ) %>%
+  
+  addPolygons(
+    weight = 1,
+    opacity = 1,
+    fillOpacity = 0.5
+  )
+```
+
+
+```{r}
+# ==========================================================
+# APPLICATION SHINY - AIRES PROTÉGÉES DU SÉNÉGAL
+# ==========================================================
+
+library(shiny)
+library(sf)
+library(leaflet)
+
+# ----------------------------------------------------------
+# 1. DOSSIER CONTENANT LE SHAPEFILE
+# ----------------------------------------------------------
+
+dossier <- "C:/Users/H P/Desktop/SHYNI-APP/data/FFCB-SN_Livrable_3_Donnees_SI"
+
+# ----------------------------------------------------------
+# 2. RECHERCHER AUTOMATIQUEMENT LE FICHIER .SHP
+# ----------------------------------------------------------
+
+shp <- list.files(
+  path = dossier,
+  pattern = "\\.shp$",
+  full.names = TRUE,
+  recursive = TRUE
+)
+
+# Vérifier qu'un shapefile existe
+if (length(shp) == 0) {
+  stop("Aucun fichier .shp trouvé dans le dossier.")
+}
+
+# Afficher le shapefile trouvé
+print(shp)
+
+# ----------------------------------------------------------
+# 3. IMPORTER LE SHAPEFILE
+# ----------------------------------------------------------
+
+aires <- st_read(
+  shp[1],
+  quiet = TRUE
+)
+
+# ----------------------------------------------------------
+# 4. VÉRIFIER LES VARIABLES IMPORTANTES
+# ----------------------------------------------------------
+
+print(names(aires))
+
+# Vérifier que ap_id existe
+if (!"id_ap" %in% names(aires)) {
+  stop("La variable 'id_ap' n'existe pas dans le shapefile.")
+}
+
+# ----------------------------------------------------------
+# 5. VÉRIFIER / TRANSFORMER LE SYSTÈME DE COORDONNÉES
+# ----------------------------------------------------------
+
+print(st_crs(aires))
+
+# Transformation en WGS84
+aires <- st_transform(
+  aires,
+  crs = 4326
+)
+
+# ----------------------------------------------------------
+# 6. VÉRIFIER LES GÉOMÉTRIES
+# ----------------------------------------------------------
+
+print(st_geometry_type(aires))
+
+# Réparer les géométries invalides si nécessaire
+aires <- st_make_valid(aires)
+
+# ----------------------------------------------------------
+# 7. ÉTENDUE GÉOGRAPHIQUE
+# ----------------------------------------------------------
+
+bbox <- st_bbox(aires)
+
+# ==========================================================
+# UI
+# ==========================================================
+
+ui <- fluidPage(
+
+  titlePanel(
+    "Aires protégées du Sénégal"
+  ),
+
+  leafletOutput(
+    outputId = "carte",
+    height = "800px"
+  )
+
+)
+
+# ==========================================================
+# SERVER
+# ==========================================================
+
+server <- function(input, output, session) {
+
+  output$carte <- renderLeaflet({
+
+    leaflet(data = aires) %>%
+
+      # Fond de carte
+      addProviderTiles(
+        providers$CartoDB.Positron
+      ) %>%
+
+      # Polygones des aires protégées
+      addPolygons(
+
+        # Identifiant unique de chaque polygone
+        layerId = ~id_ap,
+
+        # Apparence
+        weight = 1,
+        opacity = 1,
+        fillOpacity = 0.5,
+
+        # Affichage de l'identifiant au survol
+        label = ~paste0(
+          "ID : ",
+          id_ap
+        ),
+
+        # Affichage au clic
+        popup = ~paste0(
+          "<b>Aire protégée</b><br>",
+          "Identifiant : ",
+          id_ap
+        ),
+
+        # Mise en évidence au survol
+        highlightOptions = highlightOptions(
+          weight = 3,
+          bringToFront = TRUE
+        )
+      ) %>%
+
+      # Adapter automatiquement la carte
+      # à l'ensemble des polygones
+      fitBounds(
+        lng1 = bbox["xmin"],
+        lat1 = bbox["ymin"],
+        lng2 = bbox["xmax"],
+        lat2 = bbox["ymax"]
+      )
+
+  })
+
+}
+
+# ==========================================================
+# LANCER L'APPLICATION
+# ==========================================================
+
+shinyApp(
+  ui = ui,
+  server = server
+)
+```
+
+
+```{r}
+# ============================================================
+# APPLICATION SHINY - AIRES PROTÉGÉES DU SÉNÉGAL
+# ============================================================
+
+library(shiny)
+library(sf)
+library(leaflet)
+
+# ============================================================
+# 1. CHEMIN DU DOSSIER
+# ============================================================
+
+dossier <- "C:/Users/H P/Desktop/SHYNI-APP/data/FFCB-SN_Livrable_3_Donnees_SI"
+
+# ============================================================
+# 2. RECHERCHER LE SHAPEFILE
+# ============================================================
+
+shp <- list.files(
+  path = dossier,
+  pattern = "\\.shp$",
+  full.names = TRUE,
+  recursive = TRUE
+)
+
+if (length(shp) == 0) {
+  stop("Aucun fichier .shp trouvé dans le dossier.")
+}
+
+cat("Shapefile trouvé :", shp[1], "\n")
+
+# ============================================================
+# 3. IMPORTER LE SHAPEFILE
+# ============================================================
+
+aires <- st_read(
+  shp[1],
+  quiet = TRUE
+)
+
+cat("Nombre d'objets :", nrow(aires), "\n")
+print(names(aires))
+print(st_crs(aires))
+
+# ============================================================
+# 4. VÉRIFIER id_ap
+# ============================================================
+
+if (!"id_ap" %in% names(aires)) {
+  stop("La variable id_ap n'existe pas dans le shapefile.")
+}
+
+# Transformer l'identifiant en texte
+aires$id_ap <- as.character(aires$id_ap)
+
+# ============================================================
+# 5. VÉRIFIER LE CRS
+# ============================================================
+
+if (is.na(st_crs(aires))) {
+  stop(
+    "Le shapefile n'a pas de système de coordonnées défini."
+  )
+}
+
+# ============================================================
+# 6. RÉPARER LES GÉOMÉTRIES
+# ============================================================
+
+aires <- st_make_valid(aires)
+
+aires <- aires[
+  !st_is_empty(aires),
+]
+
+# ============================================================
+# 7. TRANSFORMER EN WGS84
+# ============================================================
+
+aires <- st_transform(
+  aires,
+  crs = 4326
+)
+
+# Vérifier l'étendue
+print(st_bbox(aires))
+
+# ============================================================
+# 8. UI
+# ============================================================
+
+ui <- fluidPage(
+
+  titlePanel(
+    "Carte des Aires Protégées du Sénégal"
+  ),
+
+  leafletOutput(
+    outputId = "carte",
+    height = "750px"
+  )
+)
+
+# ============================================================
+# 9. SERVER
+# ============================================================
+
+server <- function(input, output, session) {
+
+  output$carte <- renderLeaflet({
+
+    leaflet(
+      data = aires,
+      options = leafletOptions(
+        preferCanvas = TRUE
+      )
+    ) %>%
+
+      addTiles() %>%
+
+      setView(
+        lng = -14.5,
+        lat = 14.5,
+        zoom = 6
+      ) %>%
+
+      addPolygons(
+
+        # Identifiant unique
+        layerId = ~id_ap,
+
+        weight = 1,
+        opacity = 1,
+        fillOpacity = 0.45,
+
+        # Affichage au survol
+        label = ~paste0(
+          "ID : ",
+          id_ap
+        ),
+
+        # Affichage au clic
+        popup = ~paste0(
+          "<strong>Aire protégée</strong>",
+          "<br>",
+          "ID : ",
+          id_ap
+        ),
+
+        highlightOptions = highlightOptions(
+          weight = 3,
+          opacity = 1,
+          bringToFront = TRUE
+        )
+      )
+  })
+}
+
+# ============================================================
+# 10. LANCEMENT DE L'APPLICATION
+# ============================================================
+
+shinyApp(
+  ui = ui,
+  server = server
+)
+```
+```{r}
+# ============================================================
+# APPLICATION SHINY - AIRES PROTÉGÉES DU SÉNÉGAL
+# ============================================================
+
+library(shiny)
+library(sf)
+library(leaflet)
+
+# ============================================================
+# 1. CHEMIN DU DOSSIER
+# ============================================================
+
+dossier <- "C:/Users/H P/Desktop/SHYNI-APP/data/FFCB-SN_Livrable_3_Donnees_SI"
+
+# ============================================================
+# 2. RECHERCHER LE SHAPEFILE
+# ============================================================
+
+shp <- list.files(
+  path = dossier,
+  pattern = "\\.shp$",
+  full.names = TRUE,
+  recursive = TRUE
+)
+
+if (length(shp) == 0) {
+  stop("Aucun fichier .shp trouvé dans le dossier.")
+}
+
+cat("Shapefile trouvé :", shp[1], "\n")
+
+# ============================================================
+# 3. IMPORTER LE SHAPEFILE
+# ============================================================
+
+aires <- st_read(
+  shp[1],
+  quiet = TRUE
+)
+
+# Vérifier les variables disponibles
+print(names(aires))
+
+# ============================================================
+# 4. VÉRIFIER LES VARIABLES NÉCESSAIRES
+# ============================================================
+
+variables_requises <- c(
+  "id_ap",
+  "label",
+  "region",
+  "dep"
+)
+
+variables_absentes <- setdiff(
+  variables_requises,
+  names(aires)
+)
+
+if (length(variables_absentes) > 0) {
+  stop(
+    paste(
+      "Variables absentes :",
+      paste(variables_absentes, collapse = ", ")
+    )
+  )
+}
+
+# ============================================================
+# 5. CONVERTIR LES VARIABLES EN TEXTE
+# ============================================================
+
+aires$id_ap  <- as.character(aires$id_ap)
+aires$label  <- as.character(aires$label)
+aires$region <- as.character(aires$region)
+aires$dep    <- as.character(aires$dep)
+
+# ============================================================
+# 6. VÉRIFIER LE CRS
+# ============================================================
+
+if (is.na(st_crs(aires))) {
+  stop(
+    "Le shapefile n'a pas de système de coordonnées défini."
+  )
+}
+
+# ============================================================
+# 7. RÉPARER LES GÉOMÉTRIES
+# ============================================================
+
+aires <- st_make_valid(aires)
+
+aires <- aires[
+  !st_is_empty(aires),
+]
+
+# ============================================================
+# 8. TRANSFORMER EN WGS84
+# ============================================================
+
+aires <- st_transform(
+  aires,
+  crs = 4326
+)
+
+# ============================================================
+# 9. UI
+# ============================================================
+
+ui <- fluidPage(
+
+  titlePanel(
+    "Carte des Aires Protégées du Sénégal"
+  ),
+
+  leafletOutput(
+    outputId = "carte",
+    height = "800px"
+  )
+)
+
+# ============================================================
+# 10. SERVER
+# ============================================================
+
+server <- function(input, output, session) {
+
+  output$carte <- renderLeaflet({
+
+    leaflet(
+      data = aires,
+      options = leafletOptions(
+        preferCanvas = TRUE
+      )
+    ) %>%
+
+      # Fond de carte
+      addProviderTiles(
+        providers$CartoDB.Positron
+      ) %>%
+
+      # Centrer sur le Sénégal
+      setView(
+        lng = -14.5,
+        lat = 14.5,
+        zoom = 6
+      ) %>%
+
+      # ======================================================
+      # POLYGONES DES AIRES PROTÉGÉES
+      # ======================================================
+
+      addPolygons(
+
+        layerId = ~id_ap,
+
+        weight = 1,
+        opacity = 1,
+        fillOpacity = 0.45,
+
+        # ----------------------------------------------
+        # Nom affiché au survol
+        # ----------------------------------------------
+
+        label = ~paste0(
+          "<strong>", label, "</strong>",
+          "<br>Région : ", region,
+          "<br>Département : ", dep
+        ),
+
+        # ----------------------------------------------
+        # Informations affichées au clic
+        # ----------------------------------------------
+
+        popup = ~paste0(
+          "<strong>", label, "</strong>",
+          "<hr>",
+          "<b>ID :</b> ", id_ap,
+          "<br>",
+          "<b>Région :</b> ", region,
+          "<br>",
+          "<b>Département :</b> ", dep
+        ),
+
+        # Mise en évidence au survol
+        highlightOptions = highlightOptions(
+          weight = 3,
+          opacity = 1,
+          bringToFront = TRUE
+        )
+      )
+  })
+}
+
+# ============================================================
+# 11. LANCEMENT DE L'APPLICATION
+# ============================================================
+
+shinyApp(
+  ui = ui,
+  server = server
+)
+```
+
