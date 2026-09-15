@@ -22,7 +22,7 @@ library(rnaturalearth)
 # 1. CHEMINS DES 3 BASES
 # ============================================================
 
-dossier <- "C:/Users/H P/Desktop/SHYNI-APP/data"
+dossier <- "data"
 
 
 chemin_base1 <- file.path(
